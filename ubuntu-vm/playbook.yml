@@ -77,7 +77,7 @@
         state: started
         enabled: yes
 
-    # MongoDB en Docker
+    # MongoDB en Docker (sin autenticación - desarrollo local)
     - name: Crear directorio para volumen persistente de MongoDB
       file:
         path: /home/vagrant/mongodb_data
@@ -89,31 +89,41 @@
     - name: Ejecutar contenedor MongoDB
       docker_container:
         name: mongo-gop
-        image: mongo:7.0
+        image: mongo:latest
         state: started
         restart_policy: unless-stopped
         ports:
           - "27017:27017"
         volumes:
           - /home/vagrant/mongodb_data:/data/db
-        env:
-          MONGO_INITDB_DATABASE: sensor_db   # Opcional: crea la DB al iniciar
 
-    - name: Esperar a que MongoDB esté listo (hasta 30s)
+    - name: Esperar a que el contenedor MongoDB esté en estado running
+      docker_container_info:
+        name: mongo-gop
+      register: mongo_info
+      until: mongo_info.container.State.Status == "running"
+      retries: 20
+      delay: 5
+
+    - name: Esperar a que MongoDB responda en puerto 27017
       wait_for:
         host: localhost
         port: 27017
-        delay: 5
-        timeout: 30
+        delay: 10
+        timeout: 90
 
     - name: Crear colección sensor_data si no existe (idempotente)
       command: >
-        docker exec mongodb mongosh --quiet --eval 
-        'db = db.getSiblingDB("sensor_db"); 
-         if (!db.getCollectionNames().includes("sensor_data")) {
-           db.createCollection("sensor_data");
-           print("Colección sensor_data creada");
+        docker exec mongo-gop mongosh --quiet --eval
+        "db = db.getSiblingDB('sensor_db');
+         if (!db.getCollectionNames().includes('sensor_data')) {
+           db.createCollection('sensor_data');
+           print('Colección sensor_data creada');
          } else {
-           print("Colección sensor_data ya existe");
-         }'
-      changed_when: false   # Siempre ok, es idempotente
+           print('Colección sensor_data ya existe');
+         }"
+      changed_when: false
+      retries: 15
+      delay: 5
+      register: mongo_collection
+      until: mongo_collection.rc == 0
