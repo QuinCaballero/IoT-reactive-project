@@ -9,8 +9,10 @@ def mongo_persistence(sources, mongo_client: AsyncIOMotorClient):
     """
     Persiste los payloads validados en MongoDB de forma asíncrona
     """
-    db = mongo_client["sensor_db"]
-    collection = db["sensor_data"]
+    
+    client = MongoClient("mongodb://localhost:27017")
+    db = client.sensor_db
+    collection = db.sensor_data
 
     async def insert_payload(item):
         payload = item['payload']
