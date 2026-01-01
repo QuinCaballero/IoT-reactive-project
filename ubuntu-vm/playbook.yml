@@ -1,0 +1,79 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Instalar dependencias previas para Docker
+      apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Crear directorio para keyrings de apt
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Descargar clave GPG oficial de Docker (formato ASCII)
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Convertir clave a formato binario .gpg (recomendado)
+      command: gpg --dearmor -o /etc/apt/keyrings/docker.gpg /etc/apt/keyrings/docker.asc
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    - name: Añadir repositorio oficial de Docker en formato DEB822
+      copy:
+        content: |
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: {{ ansible_distribution_release }}
+          Components: stable
+          Signed-By: /etc/apt/keyrings/docker.gpg
+        dest: /etc/apt/sources.list.d/docker.sources
+        mode: '0644'
+
+    - name: Actualizar cache de apt tras añadir repo de Docker
+      apt:
+        update_cache: yes
+
+    - name: Instalar Docker Engine y plugins
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Añadir usuario vagrant al grupo docker
+      user:
+        name: vagrant
+        groups: docker
+        append: yes
+
+    - name: Habilitar y arrancar servicio Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    # Chrony (lo mantenemos)
+    - name: Instalar chrony
+      apt:
+        name: chrony
+        state: present
+        update_cache: yes
+
+    - name: Asegurar que chrony está arrancado y habilitado
+      systemd:
+        name: chrony
+        state: started
+        enabled: yes
+

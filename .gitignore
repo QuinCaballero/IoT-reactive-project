@@ -1,0 +1,31 @@
+# Vagrant
+ubuntu-vm/.vagrant/
+
+# Entorno virtual Python
+environment/
+
+# Logs y temporales Vagrant
+*.log
+ubuntu-vm/*.log
+
+# Ansible retry files
+*.retry
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Opcional
+.env
+.venv
+venv
+.IoT-env
+IoT-env

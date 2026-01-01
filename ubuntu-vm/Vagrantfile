@@ -1,0 +1,28 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-22.04"
+
+  # Synced folder rsync (obligatoria para que /vagrant exista y ansible_local encuentre el playbook)
+  config.vm.synced_folder ".", "/vagrant", type: "rsync",
+    rsync__exclude: [".git/", ".vagrant/", "*.log"]
+
+  # Usar exclusivamente la clave insecure de Vagrant (la box ya la tiene insertada)
+  config.ssh.insert_key = false
+
+  # Línea mágica: fuerza la clave insecure para TODOS los comandos SSH de Vagrant
+  config.ssh.extra_args = ["-o", "IdentitiesOnly=yes", "-i", "#{File.expand_path('~/.vagrant.d/insecure_private_key')}"]
+
+  # Aumentar timeout de boot (útil la primera vez o si la VM es lenta)
+  config.vm.boot_timeout = 600
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+    vb.cpus = 2
+    vb.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
+  end
+
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.playbook = "/vagrant/playbook.yml"
+    ansible.install_mode = "pip"
+    ansible.version = "latest"
+  end
+end
