@@ -11,6 +11,9 @@ Vagrant.configure("2") do |config|
   # Línea mágica: fuerza la clave insecure para TODOS los comandos SSH de Vagrant
   config.ssh.extra_args = ["-o", "IdentitiesOnly=yes", "-i", "#{File.expand_path('~/.vagrant.d/insecure_private_key')}"]
 
+  # Forward puerto MongoDB al host (opcional, útil para Compass o pruebas locales)
+  config.vm.network "forwarded_port", guest: 27017, host: 27017
+
   # Aumentar timeout de boot (útil la primera vez o si la VM es lenta)
   config.vm.boot_timeout = 600
 

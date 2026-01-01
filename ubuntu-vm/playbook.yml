@@ -77,3 +77,43 @@
         state: started
         enabled: yes
 
+    # MongoDB en Docker
+    - name: Crear directorio para volumen persistente de MongoDB
+      file:
+        path: /home/vagrant/mongodb_data
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0755'
+
+    - name: Ejecutar contenedor MongoDB
+      docker_container:
+        name: mongo-gop
+        image: mongo:7.0
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "27017:27017"
+        volumes:
+          - /home/vagrant/mongodb_data:/data/db
+        env:
+          MONGO_INITDB_DATABASE: sensor_db   # Opcional: crea la DB al iniciar
+
+    - name: Esperar a que MongoDB esté listo (hasta 30s)
+      wait_for:
+        host: localhost
+        port: 27017
+        delay: 5
+        timeout: 30
+
+    - name: Crear colección sensor_data si no existe (idempotente)
+      command: >
+        docker exec mongodb mongosh --quiet --eval 
+        'db = db.getSiblingDB("sensor_db"); 
+         if (!db.getCollectionNames().includes("sensor_data")) {
+           db.createCollection("sensor_data");
+           print("Colección sensor_data creada");
+         } else {
+           print("Colección sensor_data ya existe");
+         }'
+      changed_when: false   # Siempre ok, es idempotente
