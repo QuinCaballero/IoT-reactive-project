@@ -1,0 +1,10 @@
+aiohttp
+reactivex
+pandas
+motor
+pymongo
+pydantic
+dash
+plotly
+pandas
+pymongo
